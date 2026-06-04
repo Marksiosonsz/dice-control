@@ -1,6 +1,18 @@
 (function () {
     'use strict';
 
+    
+    function isThirtyDiceMode() {
+        const select = document.querySelector('#num-select');
+        return select && Number(select.value) === 30;
+    }
+
+    if (!isThirtyDiceMode()) {
+        console.log('30 Dice mode only. Script disabled.');
+        return;
+    }
+
+    
     const STORAGE_ARMED = 'ABC_HIDDEN_ARMED_QUEUE';
     const STORAGE_HISTORY = 'ABC_HIDDEN_CUSTOM_HISTORY';
     const STORAGE_SAVE_KEY = 'ABC_HIDDEN_SAVE_KEY';
