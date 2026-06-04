@@ -5,7 +5,6 @@
     const STORAGE_ARMED_EXCLUDE = 'ABC_ARMED_EXCLUDE_COLOR';
     const STORAGE_HISTORY = 'ABC_HIDDEN_CUSTOM_HISTORY';
     const STORAGE_SAVE_KEY = 'ABC_HIDDEN_SAVE_KEY';
-    const STORAGE_PENDING_ROLL = 'ABC_PENDING_REAL_ROLL';
 
     const COLORS = ['red', 'orange', 'gold', 'green', 'blue', 'purple'];
 
@@ -24,7 +23,6 @@
     };
 
     const KEY_COOLDOWN_MS = 350;
-    const PENDING_ROLL_LIMIT_MS = 20000;
 
     let lastKeyPressTime = { '1': 0, '2': 0 };
     let group1Index = -1;
@@ -53,28 +51,6 @@
 
     function getRealColor(color) {
         return COLOR_RGB[color] || color;
-    }
-
-    function markRealRollPending() {
-        sessionStorage.setItem(STORAGE_PENDING_ROLL, String(Date.now()));
-    }
-
-    function hasRealRollPending() {
-        const raw = sessionStorage.getItem(STORAGE_PENDING_ROLL);
-        const time = raw ? parseInt(raw, 10) : 0;
-
-        if (!time) return false;
-
-        if (Date.now() - time > PENDING_ROLL_LIMIT_MS) {
-            sessionStorage.removeItem(STORAGE_PENDING_ROLL);
-            return false;
-        }
-
-        return true;
-    }
-
-    function clearRealRollPending() {
-        sessionStorage.removeItem(STORAGE_PENDING_ROLL);
     }
 
     function waitReady(callback) {
@@ -112,7 +88,6 @@
 
     function markDiceSettingChanging() {
         isChangingDiceSetting = true;
-        clearRealRollPending();
 
         clearExclude();
         clearArmedExclude();
@@ -148,7 +123,6 @@
     }
 
     function cleanupNonColorDice() {
-        clearRealRollPending();
         clearExclude();
         clearArmedExclude();
         resetKeyCycle();
@@ -311,6 +285,8 @@
 
         const history = loadHistory();
 
+        // Prevent saving the same color set even if the order is shuffled.
+        // Example: red blue blue yellow == blue red blue yellow.
         if (history.length && isSameColorPattern(colors, history[0])) {
             renderHistory();
             return;
@@ -539,7 +515,6 @@
                 return;
             }
 
-            markRealRollPending();
             isChangingDiceSetting = false;
             armExclude();
             sessionStorage.removeItem(STORAGE_SAVE_KEY);
@@ -547,11 +522,6 @@
             setTimeout(hideOriginalHistoryOnly, 100);
             setTimeout(hideOriginalHistoryOnly, 500);
             setTimeout(hideOriginalHistoryOnly, 1200);
-
-            setTimeout(processAfterOriginalRoll, 500);
-            setTimeout(processAfterOriginalRoll, 1000);
-            setTimeout(processAfterOriginalRoll, 1500);
-            setTimeout(processAfterOriginalRoll, 2200);
         }, true);
     }
 
@@ -564,11 +534,6 @@
         }
 
         if (isChangingDiceSetting) return;
-
-        if (!hasRealRollPending()) {
-            renderHistory();
-            return;
-        }
 
         const armedExclude = getArmedExclude();
 
@@ -585,7 +550,6 @@
         }
 
         addHistory(finalColors);
-        clearRealRollPending();
 
         setTimeout(hideOriginalHistoryOnly, 200);
         setTimeout(hideOriginalHistoryOnly, 800);
@@ -705,16 +669,6 @@
                 'margin:0!important;' +
                 'padding:0!important;' +
                 'overflow:hidden!important;' +
-            '}' +
-
-            '#history:not([id^="abc-"]),#show-history:not([id^="abc-"]),#hide-history:not([id^="abc-"]){' +
-                'display:none!important;' +
-                'visibility:hidden!important;' +
-                'opacity:0!important;' +
-                'height:0!important;' +
-                'max-height:0!important;' +
-                'overflow:hidden!important;' +
-                'pointer-events:none!important;' +
             '}' +
 
             '#dice-roll-box{' +
@@ -844,7 +798,6 @@
         hookRollButton();
         hookDiceControls();
         injectCss();
-        renderHistory();
 
         setTimeout(hideAdLayoutPushers, 300);
         setTimeout(hideAdLayoutPushers, 1000);
@@ -856,13 +809,10 @@
         setTimeout(processAfterOriginalRoll, 500);
         setTimeout(processAfterOriginalRoll, 1000);
         setTimeout(processAfterOriginalRoll, 1500);
-        setTimeout(processAfterOriginalRoll, 2200);
 
         setInterval(function () {
             if (!isColorDiceMode()) {
                 cleanupNonColorDice();
-            } else {
-                hideOriginalHistoryOnly();
             }
         }, 700);
     }
