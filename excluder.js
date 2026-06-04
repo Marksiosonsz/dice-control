@@ -32,6 +32,11 @@
     let rollHooked = false;
     let isChangingDiceSetting = false;
 
+    // IMPORTANT:
+    // Ito yung lock para hindi Lucky Roll / site rerender ang mag-save sa fake history.
+    let allowHistorySave = false;
+    let rollSaveToken = 0;
+
     function isColorDiceMode() {
         const typeSelect = document.querySelector('#type-select');
         const title = document.querySelector('#sub-title2, h1, h2, h3');
@@ -88,6 +93,8 @@
 
     function markDiceSettingChanging() {
         isChangingDiceSetting = true;
+        allowHistorySave = false;
+        rollSaveToken++;
 
         clearExclude();
         clearArmedExclude();
@@ -123,6 +130,9 @@
     }
 
     function cleanupNonColorDice() {
+        allowHistorySave = false;
+        rollSaveToken++;
+
         clearExclude();
         clearArmedExclude();
         resetKeyCycle();
@@ -285,8 +295,6 @@
 
         const history = loadHistory();
 
-        // Prevent saving the same color set even if the order is shuffled.
-        // Example: red blue blue yellow == blue red blue yellow.
         if (history.length && isSameColorPattern(colors, history[0])) {
             renderHistory();
             return;
@@ -493,6 +501,12 @@
 
         const observer = new MutationObserver(function () {
             hideOriginalHistoryOnly();
+
+            // Kapag site/Lucky Roll nagrerender ng old history,
+            // ibabalik lang natin yung fake history display.
+            if (isColorDiceMode()) {
+                renderHistory();
+            }
         });
 
         observer.observe(document.body, {
@@ -503,29 +517,7 @@
         });
     }
 
-    function hookRollButton() {
-        const roll = document.querySelector('#roll-button');
-        if (!roll || rollHooked) return;
-
-        rollHooked = true;
-
-        roll.addEventListener('click', function () {
-            if (!isColorDiceMode()) {
-                cleanupNonColorDice();
-                return;
-            }
-
-            isChangingDiceSetting = false;
-            armExclude();
-            sessionStorage.removeItem(STORAGE_SAVE_KEY);
-
-            setTimeout(hideOriginalHistoryOnly, 100);
-            setTimeout(hideOriginalHistoryOnly, 500);
-            setTimeout(hideOriginalHistoryOnly, 1200);
-        }, true);
-    }
-
-    function processAfterOriginalRoll() {
+    function processAfterOriginalRoll(token) {
         hideOriginalHistoryOnly();
 
         if (!isColorDiceMode()) {
@@ -534,6 +526,13 @@
         }
 
         if (isChangingDiceSetting) return;
+
+        // Reject old delayed timers.
+        if (token !== rollSaveToken) return;
+
+        // IMPORTANT:
+        // Kapag hindi galing sa actual Roll button, wag gagalawin fake history.
+        if (!allowHistorySave) return;
 
         const armedExclude = getArmedExclude();
 
@@ -551,9 +550,56 @@
 
         addHistory(finalColors);
 
+        // Once lang per real roll.
+        allowHistorySave = false;
+
         setTimeout(hideOriginalHistoryOnly, 200);
         setTimeout(hideOriginalHistoryOnly, 800);
         setTimeout(hideOriginalHistoryOnly, 1500);
+    }
+
+    function hookRollButton() {
+        const roll = document.querySelector('#roll-button');
+        if (!roll || rollHooked) return;
+
+        rollHooked = true;
+
+        roll.addEventListener('click', function () {
+            if (!isColorDiceMode()) {
+                cleanupNonColorDice();
+                return;
+            }
+
+            isChangingDiceSetting = false;
+            allowHistorySave = true;
+            rollSaveToken++;
+
+            const token = rollSaveToken;
+
+            armExclude();
+            sessionStorage.removeItem(STORAGE_SAVE_KEY);
+
+            setTimeout(hideOriginalHistoryOnly, 100);
+            setTimeout(hideOriginalHistoryOnly, 500);
+            setTimeout(hideOriginalHistoryOnly, 1200);
+
+            // Ito lang ang allowed mag-process ng fake history.
+            setTimeout(function () {
+                processAfterOriginalRoll(token);
+            }, 500);
+
+            setTimeout(function () {
+                processAfterOriginalRoll(token);
+            }, 1000);
+
+            setTimeout(function () {
+                processAfterOriginalRoll(token);
+            }, 1500);
+
+            setTimeout(function () {
+                processAfterOriginalRoll(token);
+            }, 2200);
+        }, true);
     }
 
     function canAcceptKey(key) {
@@ -786,7 +832,6 @@
                     'max-width:calc(100vw - 24px)!important;' +
                 '}' +
             '}';
-
         document.head.appendChild(style);
     }
 
@@ -798,6 +843,7 @@
         hookRollButton();
         hookDiceControls();
         injectCss();
+        renderHistory();
 
         setTimeout(hideAdLayoutPushers, 300);
         setTimeout(hideAdLayoutPushers, 1000);
@@ -806,13 +852,15 @@
         setTimeout(hideOriginalHistoryOnly, 1000);
         setTimeout(hideOriginalHistoryOnly, 2000);
 
-        setTimeout(processAfterOriginalRoll, 500);
-        setTimeout(processAfterOriginalRoll, 1000);
-        setTimeout(processAfterOriginalRoll, 1500);
+        // Removed old auto processAfterOriginalRoll here.
+        // Dati kasi dito nasisira fake history kapag Lucky Roll / rerender lang.
 
         setInterval(function () {
             if (!isColorDiceMode()) {
                 cleanupNonColorDice();
+            } else {
+                hideOriginalHistoryOnly();
+                renderHistory();
             }
         }, 700);
     }
