@@ -32,8 +32,6 @@
     let rollHooked = false;
     let isChangingDiceSetting = false;
 
-    // IMPORTANT:
-    // Ito yung lock para hindi Lucky Roll / site rerender ang mag-save sa fake history.
     let allowHistorySave = false;
     let rollSaveToken = 0;
 
@@ -502,11 +500,8 @@
         const observer = new MutationObserver(function () {
             hideOriginalHistoryOnly();
 
-            // Kapag site/Lucky Roll nagrerender ng old history,
-            // ibabalik lang natin yung fake history display.
-            if (isColorDiceMode()) {
-                renderHistory();
-            }
+            // IMPORTANT:
+            // No renderHistory here para hindi ma-stuck sa Feeling Lucky loading.
         });
 
         observer.observe(document.body, {
@@ -526,16 +521,10 @@
         }
 
         if (isChangingDiceSetting) return;
-
-        // Reject old delayed timers.
         if (token !== rollSaveToken) return;
-
-        // IMPORTANT:
-        // Kapag hindi galing sa actual Roll button, wag gagalawin fake history.
         if (!allowHistorySave) return;
 
         const armedExclude = getArmedExclude();
-
         let finalColors = getCurrentColors();
 
         if (!finalColors.length) return;
@@ -550,7 +539,6 @@
 
         addHistory(finalColors);
 
-        // Once lang per real roll.
         allowHistorySave = false;
 
         setTimeout(hideOriginalHistoryOnly, 200);
@@ -583,7 +571,6 @@
             setTimeout(hideOriginalHistoryOnly, 500);
             setTimeout(hideOriginalHistoryOnly, 1200);
 
-            // Ito lang ang allowed mag-process ng fake history.
             setTimeout(function () {
                 processAfterOriginalRoll(token);
             }, 500);
@@ -832,6 +819,7 @@
                     'max-width:calc(100vw - 24px)!important;' +
                 '}' +
             '}';
+
         document.head.appendChild(style);
     }
 
@@ -852,15 +840,14 @@
         setTimeout(hideOriginalHistoryOnly, 1000);
         setTimeout(hideOriginalHistoryOnly, 2000);
 
-        // Removed old auto processAfterOriginalRoll here.
-        // Dati kasi dito nasisira fake history kapag Lucky Roll / rerender lang.
-
         setInterval(function () {
             if (!isColorDiceMode()) {
                 cleanupNonColorDice();
             } else {
                 hideOriginalHistoryOnly();
-                renderHistory();
+
+                // IMPORTANT:
+                // No renderHistory dito para hindi ma-stuck sa Lucky Roll/loading.
             }
         }, 700);
     }
