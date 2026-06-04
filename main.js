@@ -7,7 +7,7 @@
 
     const COLORS = ['red', 'orange', 'gold', 'green', 'blue', 'purple'];
 
-    const KEY_INTERVAL_MS = 1000; // 2 seconds cooldown para iwas double click
+    const KEY_INTERVAL_MS = 500; // 2 seconds cooldown para iwas double click
 
     let selectedColorIndex = -1;
     let selectedAmount = 0;
