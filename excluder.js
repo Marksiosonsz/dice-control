@@ -3140,37 +3140,27 @@
   }
 
   function renderHistory() {
-    ignoreMutations(80);
+  ignoreMutations(80);
 
-    const container =
-      getHistoryContainer();
+  const container =
+    getHistoryContainer();
 
-    if (!container) return;
+  if (!container) return;
 
-    if (getDiceCount() > 6) {
-      return;
-    }
-
-    container.innerHTML = '';
-
-    abcHistory.forEach((colors, index) => {
-      container.appendChild(
-        makeRow(colors, index)
-      );
-    });
+  if (getDiceCount() > 6) {
+    return;
   }
 
-  function addHistory(colors) {
-    if (!colors.length) return;
+  container.innerHTML = '';
 
-    if (getDiceCount() > 6) {
-      return;
-    }
+  abcHistory.forEach((colors, index) => {
+    container.appendChild(
+      makeRow(colors, index)
+    );
+  });
+}
 
-    const newKey =
-      colors.join('|');
-
-    function addHistory(colors) {
+function addHistory(colors) {
   if (!colors.length) return;
 
   if (getDiceCount() > 6) {
@@ -3178,26 +3168,68 @@
   }
 
   abcHistory.unshift([...colors]);
-  abcHistory = abcHistory.slice(0, 20);
 
-  lastSavedKey = colors.join('|');
+  abcHistory =
+    abcHistory.slice(0, 20);
+
+  lastSavedKey =
+    colors.join('|');
 
   saveHistory();
+
   renderHistory();
+
+  protectFakeHistoryLater();
 }
 
-    lastSavedKey = newKey;
+// ===== LUCKY ROLL / ORIGINAL HISTORY FIX =====
 
-    abcHistory.unshift(colors);
+function removeOriginalHistory() {
+  document
+    .querySelectorAll(
+      '#rolls-history, .rolls-history, #last-rolls, .last-rolls, #roll-history, .roll-history'
+    )
+    .forEach(el => {
+      if (
+        el.id !== 'abc-history-panel' &&
+        !el.closest('#abc-history-panel')
+      ) {
+        el.remove();
+      }
+    });
+}
 
-    abcHistory =
-      abcHistory.slice(0, 20);
+function protectFakeHistory() {
+  removeOriginalHistory();
 
-    saveHistory();
-
+  if (typeof renderHistory === 'function') {
     renderHistory();
   }
+}
 
+function protectFakeHistoryLater() {
+  setTimeout(protectFakeHistory, 300);
+  setTimeout(protectFakeHistory, 800);
+  setTimeout(protectFakeHistory, 1500);
+  setTimeout(protectFakeHistory, 2500);
+}
+
+function setupFakeHistoryProtector() {
+  const observer =
+    new MutationObserver(() => {
+      clearTimeout(window.__fakeHistoryProtectTimer);
+
+      window.__fakeHistoryProtectTimer =
+        setTimeout(() => {
+          protectFakeHistory();
+        }, 120);
+    });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+}
   // ====================================
   // DICE
   // ====================================
