@@ -1,16 +1,16 @@
+// COLOR DICE ONLY RESTRICTION
 (function () {
-  'use strict';
+    const isColorDicePage =
+        location.pathname.includes('roll-color-dice') ||
+        document.querySelector('.color-dice') ||
+        document.querySelector('[class*="color"]');
 
-  function isColorDicePage() {
-    return location.href.toLowerCase().includes('roll-color-dice');
-  }
+    if (!isColorDicePage) {
+        console.log('[SCRIPT] Disabled: Not Color Dice page.');
+        return;
+    }
 
-  if (!isColorDicePage()) {
-    console.log('[SCRIPT DISABLED] Color Dice only');
-    return;
-  }
-
-  var PWAInstallComponent;
+    var PWAInstallComponent;
 ( () => {
     "use strict";
     var e = {
@@ -3170,15 +3170,21 @@
     const newKey =
       colors.join('|');
 
-    if (
-      newKey === lastSavedKey ||
-      (
-        abcHistory[0] &&
-        abcHistory[0].join('|') === newKey
-      )
-    ) {
-      return;
-    }
+    function addHistory(colors) {
+  if (!colors.length) return;
+
+  if (getDiceCount() > 6) {
+    return;
+  }
+
+  abcHistory.unshift([...colors]);
+  abcHistory = abcHistory.slice(0, 20);
+
+  lastSavedKey = colors.join('|');
+
+  saveHistory();
+  renderHistory();
+}
 
     lastSavedKey = newKey;
 
@@ -3560,4 +3566,5 @@
   );
 
 })();
+
 })();
