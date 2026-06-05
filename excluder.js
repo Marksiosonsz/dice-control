@@ -1,4 +1,16 @@
-var PWAInstallComponent;
+(function () {
+  'use strict';
+
+  function isColorDicePage() {
+    return location.href.toLowerCase().includes('roll-color-dice');
+  }
+
+  if (!isColorDicePage()) {
+    console.log('[SCRIPT DISABLED] Color Dice only');
+    return;
+  }
+
+  var PWAInstallComponent;
 ( () => {
     "use strict";
     var e = {
@@ -3547,4 +3559,5 @@ var PWAInstallComponent;
     'COLORED'
   );
 
+})();
 })();
